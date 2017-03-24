@@ -1,0 +1,68 @@
+\documentclass{article}
+\usepackage{natbib}
+\usepackage{graphics}
+\usepackage{amsmath}
+\usepackage{indentfirst}
+\usepackage[utf8]{inputenc}
+
+\DeclareMathOperator{\var}{var}
+\DeclareMathOperator{\cov}{cov}
+
+% \VignetteIndexEntry{PCFAM Example}
+
+\begin{document}
+
+<<foo,include=FALSE,echo=FALSE>>=
+options(keep.source = TRUE, width = 60)
+foo <- packageDescription("PCFAM")
+@
+
+\title{PCFAM Package Example (Version \Sexpr{foo$Version})}
+\author{Yi-Hui Zhou}
+\maketitle
+
+\section{The problem}
+
+The issue of robustness to family relationships in computing genotype ancestry scores such as eigenvector projections has received increased attention in genetic association, and is particularly challenging when sets of both unrelated individuals and closely-related family members are included.  
+
+We consider two main novel strategies: (i) matrix substitution based on decomposition of a target family-orthogonalized covariance matrix, and (ii) using family-averaged data to obtain loadings.   We illustrate the performance via simulations, including resampling from 1000 Genomes Project data, and analysis of a cystic fibrosis dataset. 
+The matrix substitution approach has similar performance to the current standard, but is simple and uses only a genotype covariance matrix, while the family-average method shows superior performance.  Our approaches are accompanied by novel ancillary approaches that provide considerable insight, including individual-specific eigenvalue scree plots. 
+
+\section{Example}
+In this document, we give an example to run \verb@PCFAM@ package in R. 
+The first step is to load the example genotype data by the following R statements. Users can download the example genotype data from \verb@http://www4.ncsu.edu/~yzhou19/@
+\begin{verbatim}
+originalX=geno.combined.sibs
+\end{verbatim}
+
+The second step is to row scale and residualize the original genotype data.
+\begin{verbatim}
+X=rowscale(originalX)
+Xresid=residualize(X)
+#Xresid is the residualized version of X, 
+# after removing effects of larger-scale ancestry. 
+\end{verbatim}
+
+Then we calculate a correlation matrix of residualized X, used as input for findfamilies
+\begin{verbatim}
+corXresid=cor(Xresid)
+\end{verbatim}
+
+The next intermediate step is important to robustly indentify family members, but is not otherwise used in the ancestry score calculation. \verb@myfam@ is the family IDs identified. User can use output from other software such as KING, alternately. Singletons are labeled family=0, so if F is the number of families, we expect \verb@F+1@ unique \verb@myfam@ IDs.
+\begin{verbatim}
+myfam=findfamilies(corXresid,0.1)
+length(unique(myfam))
+#Number of ancestry scores to use.
+K=6
+\end{verbatim}
+
+
+Now we can apply matrix substitution approach and family average approach.
+\begin{verbatim}
+myms.pca=ms.pca(X,corXresid,0.1,K) 
+myeigenvectors=myms.pca$eigenvector
+#Ancestry scores from the family average approach
+familyave.result=familyave(X,myfam,top=K) 
+\end{verbatim}
+
+\end{document}
